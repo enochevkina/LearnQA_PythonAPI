@@ -1,9 +1,6 @@
 import requests
 import pytest
 
-response = requests.get('https://playground.learnqa.ru/api/homework_cookie')
-print(response.cookies)
-
 class TestHomeworkCookie:
 
     @pytest.fixture(autouse=True)
