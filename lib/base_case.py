@@ -1,5 +1,8 @@
 from requests import Response
 import json
+from datetime import datetime
+from lib.my_requests import MyRequests
+from lib.assertions import Assertions
 
 class BaseCase:
     def get_cookie (self, response: Response, cookie_name):
@@ -19,3 +22,51 @@ class BaseCase:
         assert name in response_as_dict, f"Response JSON does not contain {name} key"
 
         return response_as_dict[name]
+
+    def prepare_registration_data(self, email = None):
+        if email is None:
+            base_part = "learnqa"
+            domain = "example.com"
+            random_part = datetime.now().strftime("%m%d%Y%H%M%S") + f"{datetime.now().microsecond:06d}"
+            email = f"{base_part}{random_part}@{domain}"
+        return  {
+            'password': '123',
+            'username': 'learnqa',
+            'firstName': 'learnqa',
+            'lastName': 'learnqa',
+            'email': email
+        }
+    def create_user(self):
+        register_data = self.prepare_registration_data()
+        response = MyRequests.post("/user", data=register_data)
+
+        Assertions.assert_code_status(response, 200)
+        Assertions.assert_json_has_key(response, "id")
+
+        return {
+            "user_id": response.json()["id"],
+            "email": register_data["email"],
+            "password": register_data["password"]
+        }
+
+    def login_user(self, email, password):
+
+        response = MyRequests.post(
+            "/user/login",
+            data={"email": email, "password": password}
+        )
+
+        Assertions.assert_code_status(response, 200)
+        Assertions.assert_cookie_has_name(response, "auth_sid")
+        Assertions.assert_header_has_name(response, "x-csrf-token")
+
+        return {
+            "auth_sid": response.cookies["auth_sid"],
+            "token": response.headers["x-csrf-token"]
+        }
+
+    def create_and_login_user(self):
+        user = self.create_user()
+        auth = self.login_user(user["email"], user["password"])
+
+        return {**user, **auth}
