@@ -23,7 +23,6 @@ class Assertions:
 
         assert name in response_as_dict, f"Response JSON does not contain {name} key"
 
-    
     @staticmethod
     def assert_json_has_keys(response: Response, names: list):
         try:
@@ -58,4 +57,14 @@ class Assertions:
         assert response.status_code == expected_status_code, \
             f"Unexpected status code!Expected:{expected_status_code}. Actual: {response.status_code}"
 
+    @staticmethod
+    def assert_cookie_has_name(response, cookie_name):
 
+        cookies = response.cookies
+        assert cookie_name in cookies, f"Cookie с именем '{cookie_name}' отсутствует в ответе. Все cookies: {cookies}"
+
+    @staticmethod
+    def assert_header_has_name(response, header_name):
+
+        headers = response.headers
+        assert header_name in headers, f"Заголовок '{header_name}' отсутствует в ответе. Все заголовки: {headers}"
