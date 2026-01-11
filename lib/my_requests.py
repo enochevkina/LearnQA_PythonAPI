@@ -6,10 +6,16 @@ class MyRequests():
     @staticmethod
     def post(url:str, data:dict = None, headers:dict = None, cookies:dict = None):
         return MyRequests._send(url, data, headers, cookies, 'POST')
+    
+    @staticmethod
     def get(url:str, data:dict = None, headers:dict = None, cookies:dict = None):
         return MyRequests._send(url, data, headers, cookies, 'GET')
+    
+    @staticmethod
     def put(url:str, data:dict = None, headers:dict = None, cookies:dict = None):
         return MyRequests._send(url, data, headers, cookies, 'PUT')
+    
+    @staticmethod
     def delete(url:str, data:dict = None, headers:dict = None, cookies:dict = None):
         return MyRequests._send(url, data, headers, cookies, 'DELETE')
 
@@ -37,5 +43,6 @@ class MyRequests():
             raise Exception(f"Bad HTTTP method '{method}' was received")
 
         Logger.add_response(response)
+
 
         return response
