@@ -1,149 +1,110 @@
 import pytest
-import requests
+import allure
+from lib.my_requests import MyRequests
 from lib.base_case import BaseCase
 from lib.assertions import Assertions
-from datetime import datetime
 
+
+@pytest.fixture
+def email():
+    return "vinkotov@example.com"
+
+
+@allure.epic("User registration cases")
 class TestUserRegister(BaseCase):
     missing_params = [
-        ("password"),
-        ("username"),
-        ("firstName"),
-        ("lastName"),
-        ("email")
+        "password",
+        "username",
+        "firstName",
+        "lastName",
+        "email"
     ]
 
-    @pytest.fixture(autouse=True)
-    def setup(self):
-        base_part = "learnqa"
-        domain = "example.com"
-        random_part = datetime.now().strftime("%m%d%Y%H%M%S")
-        self.email = f"{base_part}{random_part}@{domain}"
-
+    @allure.description("This test checks that user can be created successfully")
+    @allure.severity(allure.severity_level.CRITICAL)
     def test_create_user_successfully(self):
-        data = {
-            'password': '123',
-            'username': 'learnqa',
-            'firstName': 'learnqa',
-            'lastName': 'learnqa',
-            'email': self.email
-        }
+        data = self.prepare_registration_data()
 
-        response = requests.post("https://playground.learnqa.ru/api/user/", data=data)
+        with allure.step("Create new user"):
+            response = MyRequests.post("/user/", data=data)
 
         Assertions.assert_code_status(response, 200)
         Assertions.assert_json_has_key(response, "id")
 
+    @allure.description("This test checks that user cannot be created with existing email")
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_create_user_with_existing_email(self, email):
+        data = self.prepare_registration_data(email=email)
 
-    def test_create_user_with_existing_email(self):
-        email = 'vinkotov@example.com'
-        data = {
-            'password': '123',
-            'username': 'learnqa',
-            'firstName': 'learnqa',
-            'lastName': 'learnqa',
-            'email': email
-        }
-
-        response = requests.post("https://playground.learnqa.ru/api/user/", data=data)
+        with allure.step("Try to create user with existing email"):
+            response = MyRequests.post("/user/", data=data)
 
         Assertions.assert_code_status(response, 400)
         assert response.content.decode("utf-8") == f"Users with email '{email}' already exists", \
             f"Unexpected response content {response.content}"
 
-    def test_create_user_with_invalid_email(self):
-        email = 'vinkotov.example.com'
-        data = {
-            'password': '123',
-            'username': 'learnqa',
-            'firstName': 'learnqa',
-            'lastName': 'learnqa',
-            'email': email
-        }
+    @allure.description("This test checks that user cannot be created with invalid email")
+    @allure.severity(allure.severity_level.NORMAL)
+    def test_create_user_with_invalid_email(self, email):
+        data = self.prepare_registration_data(email="vinkotov.example.com")
 
-        response = requests.post("https://playground.learnqa.ru/api/user/", data=data)
+        with allure.step("Try to create user with invalid email"):
+            response = MyRequests.post("/user/", data=data)
 
         Assertions.assert_code_status(response, 400)
         assert response.content.decode("utf-8") == "Invalid email format", \
             f"Unexpected response content {response.content}"
 
     @pytest.mark.parametrize('missing_param', missing_params)
-    def test_create_user_with_missing_param(self, missing_param):
+    @allure.description("This test checks that user cannot be created with missing required parameters")
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_create_user_with_missing_param(self, missing_param, email):
+        data = {
+            'password': '123',
+            'username': 'learnqa',
+            'firstName': 'learnqa',
+            'lastName': 'learnqa',
+            'email': email
+        }
 
-        global response
-        if missing_param == "password":
-            data = {
-                'username': 'learnqa',
-                'firstName': 'learnqa',
-                'lastName': 'learnqa',
-                'email': self.email
-            }
-            response = requests.post("https://playground.learnqa.ru/api/user/", data=data)
+        data.pop(missing_param, None)
 
-        elif missing_param == "username":
-            data = {
-                'password': '123',
-                'firstName': 'learnqa',
-                'lastName': 'learnqa',
-                'email': self.email
-            }
-            response = requests.post("https://playground.learnqa.ru/api/user/", data=data)
-
-        elif missing_param == "firstName":
-            data = {
-                'password': '123',
-                'username': 'learnqa',
-                'lastName': 'learnqa',
-                'email': self.email
-            }
-            response = requests.post("https://playground.learnqa.ru/api/user/", data=data)
-
-        elif missing_param == "lastName":
-            data = {
-                'password': '123',
-                'username': 'learnqa',
-                'firstName': 'learnqa',
-                'email': self.email
-            }
-            response = requests.post("https://playground.learnqa.ru/api/user/", data=data)
-
-        elif missing_param == "email":
-            data = {
-                'password': '123',
-                'username': 'learnqa',
-                'firstName': 'learnqa',
-                'lastName': 'learnqa'
-            }
-            response = requests.post("https://playground.learnqa.ru/api/user/", data=data)
+        with allure.step(f"Try to create user with missing parameter: {missing_param}"):
+            response = MyRequests.post("/user/", data=data)
 
         Assertions.assert_code_status(response, 400)
         assert response.content.decode("utf-8") == f"The following required params are missed: {missing_param}"
 
-    def test_create_user_with_short_name(self):
+    @allure.description("This test checks that user cannot be created with too short username")
+    @allure.severity(allure.severity_level.NORMAL)
+    def test_create_user_with_short_name(self, email):
         data = {
             'password': '123',
             'username': 'l',
             'firstName': 'learnqa',
             'lastName': 'learnqa',
-            'email': self.email
+            'email': email
         }
 
-        response = requests.post("https://playground.learnqa.ru/api/user/", data=data)
+        with allure.step("Try to create user with too short username"):
+            response = MyRequests.post("/user/", data=data)
 
         Assertions.assert_code_status(response, 400)
         assert response.content.decode("utf-8") == "The value of 'username' field is too short"
 
-    def test_create_user_with_long_name(self):
+    @allure.description("This test checks that user cannot be created with too long username")
+    @allure.severity(allure.severity_level.NORMAL)
+    def test_create_user_with_long_name(self, email):
         data = {
             'password': '123',
-            'username': 'learnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnqalearnq',
+            'username': 'learnqa'*50,
             'firstName': 'learnqa',
             'lastName': 'learnqa',
-            'email': self.email
+            'email': email
         }
 
-        response = requests.post("https://playground.learnqa.ru/api/user/", data=data)
+        with allure.step("Try to create user with too long username"):
+            response = MyRequests.post("/user/", data=data)
 
         Assertions.assert_code_status(response, 400)
         assert response.content.decode("utf-8") == "The value of 'username' field is too long"
-
